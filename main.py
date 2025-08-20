@@ -1,6 +1,6 @@
 from get_transcript import get_youtube_transcript
 from store_embeddings import store_transcript_as_embeddings
-from qa_system import answer_questio
+from qa_system import answer_question
 def extract_video_id(url):
     # Simple extraction for common YouTube URLs
     import re
