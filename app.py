@@ -78,7 +78,7 @@ def main():
                             
                             # Store embeddings
                             st.info("🧠 Creating embeddings...")
-                            store_transcript_as_embeddings(transcript)
+                            store_transcript_as_embeddings(transcript, video_id)
                             
                             st.session_state.transcript_processed = True
                             st.success("✅ Video processed successfully!")
@@ -140,7 +140,7 @@ def main():
         if ask_button and question:
             with st.spinner("🤔 Thinking..."):
                 try:
-                    answer_result = answer_question(question)
+                    answer_result = answer_question(question, st.session_state.current_video_id)
                     # Extract the answer text from the result
                     answer_text = answer_result.get('result', str(answer_result))
                     
@@ -162,13 +162,24 @@ def main():
             "Are there any specific examples mentioned?",
             "What recommendations are given?"
         ]
-        
         cols = st.columns(len(suggestions))
+        def set_question(suggestion):
+            st.session_state.question_input = suggestion
+
         for i, suggestion in enumerate(suggestions):
             with cols[i]:
-                if st.button(suggestion, key=f"suggestion_{i}"):
-                    st.session_state.question_input = suggestion
-                    st.rerun()
+                st.button(
+                suggestion,
+                key=f"suggestion_{i}",
+                on_click=set_question,
+                args=(suggestion,)
+            )
+
+        # for i, suggestion in enumerate(suggestions):
+        #     with cols[i]:
+        #         if st.button(suggestion, key=f"suggestion_{i}"):
+        #             st.session_state.question_input = suggestion
+        #             st.rerun()
     
     else:
         # Welcome screen

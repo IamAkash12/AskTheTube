@@ -1,32 +1,41 @@
 import os
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
+from langchain_postgres import PGVector
 from langchain_openai import OpenAIEmbeddings, OpenAI
 from langchain.chains import RetrievalQA
 
-# Load environment variables
 load_dotenv()
 
-def answer_question(question, persist_directory="db"):
-    # Load vector DB and embeddings
-    embeddings = OpenAIEmbeddings(
-        openai_api_key=os.getenv("OPENAI_API_KEY")
+def answer_question(question, video_id):
+    """Answer question using PostgreSQL vector store"""
+    database_url = os.getenv("DATABASE_URL")
+    
+    if not database_url:
+        raise ValueError("DATABASE_URL not found in .env file")
+    
+    # Create embeddings
+    embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+    
+    # Simple collection name (same as storage)
+    collection_name = f"video_{video_id.replace('-', '_')}"
+    
+    # Connect to existing vector store
+    vectorstore = PGVector(
+        connection=database_url,
+        embeddings=embeddings,
+        collection_name=collection_name
     )
-    vectordb = Chroma(
-        persist_directory=persist_directory,
-        embedding_function=embeddings
-    )
-
+    
     # Set up LLM
     llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
-
-    # Set up RetrievalQA chain
-    qa = RetrievalQA.from_chain_type(
+    
+    # Create QA chain
+    qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",
-        retriever=vectordb.as_retriever()
+        retriever=vectorstore.as_retriever()
     )
-
-    # Run query
-    answer = qa.invoke(question)
-    return answer
+    
+    # Get answer
+    result = qa_chain.invoke(question)
+    return result
